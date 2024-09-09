@@ -87,53 +87,7 @@ int WinMain(HINSTANCE hInstance,
 
         ProcessMessage(Message);
 
-        UpdateClientRectSize();        
-
-        //Iterate FrameBuffer and set pixels color
-        for (u32 Y = 0; Y < GlobalState.FrameBufferS.Height; ++Y)
-        {
-            for(u32 X = 0; X < GlobalState.FrameBufferS.Width; ++X)
-            {
-                //Calc shift like 2D matrix
-                u32 PixelID = GlobalState.FrameBufferS.Width * Y + X;
-                GlobalState.FrameBufferS.Pixels[PixelID] = 0xFF0000FF;
-            }
-        }
-
-
-        //Create BITMAP Struct
-        //BITMAPHEADER
-        BITMAPINFOHEADER BitmapHeader = {
-            sizeof(BITMAPINFOHEADER),                  //Bit size of sctruct
-            (LONG)GlobalState.FrameBufferS.Width,        //Width of buffer
-            (LONG)GlobalState.FrameBufferS.Height,       //Heght of buffer
-            1,
-            32,
-            BI_RGB,
-            0,0,0,0,0
-        };
-
-        BITMAPINFO BitmapInfo = {
-            BitmapHeader,
-            NULL,
-        };
-        
-        
-        //Copies BITMAP (pixels) into screen buffer
-        Assert(StretchDIBits(
-                   GlobalState.DeviceContext,
-                   0,
-                   0,
-                   GlobalState.ScreenS.srcWidth,
-                   GlobalState.ScreenS.srcHeight,
-                   0,
-                   0,
-                   GlobalState.FrameBufferS.Width,
-                   GlobalState.FrameBufferS.Height,
-                   GlobalState.FrameBufferS.Pixels,
-                   &BitmapInfo,
-                   DIB_RGB_COLORS,
-                   SRCCOPY));
+        //CopiFrameBufferInContext();
        
     }    
 
@@ -156,6 +110,12 @@ LRESULT Win32WindowsCallback(HWND WindowHandler,
         case WM_SIZE:
         {
             UpdateClientRectSize();
+            
+        } break;
+
+        case WM_SIZING:
+        {
+            CopiFrameBufferInContext();
         } break;
         
         //Handle window destroy and close event
@@ -179,22 +139,22 @@ LRESULT Win32WindowsCallback(HWND WindowHandler,
 void ProcessMessage(MSG Message)
 {
     while(PeekMessageA(&Message, GlobalState.WindowHandler, 0, 0, PM_REMOVE))
+    {
+        switch(Message.message)
         {
-            switch(Message.message)
+            case WM_QUIT:
             {
-                case WM_QUIT:
-                {
-                    GlobalState.IsRunning = false;
-                } break;
+                GlobalState.IsRunning = false;
+            } break;
                 
-                default:
-                {
-                    //Default message handler 
-                    TranslateMessage(&Message);
-                    DispatchMessage(&Message);
-                } break;
-            }
+            default:
+            {
+                //Default message handler 
+                TranslateMessage(&Message);
+                DispatchMessage(&Message);
+            } break;
         }
+    }
 }
 
 void UpdateClientRectSize()
@@ -209,4 +169,56 @@ void UpdateClientRectSize()
     //Get size of area by RECT params
     GlobalState.ScreenS.srcWidth = ClientRect.right - ClientRect.left; 
     GlobalState.ScreenS.srcHeight = ClientRect.bottom - ClientRect.top;
+}
+
+
+void CopiFrameBufferInContext()
+{
+    UpdateClientRectSize();        
+
+    //Iterate FrameBuffer and set pixels color
+    for (u32 Y = 0; Y < GlobalState.FrameBufferS.Height; ++Y)
+    {
+        for(u32 X = 0; X < GlobalState.FrameBufferS.Width; ++X)
+        {
+            //Calc shift like 2D matrix
+            u32 PixelID = GlobalState.FrameBufferS.Width * Y + X;
+            GlobalState.FrameBufferS.Pixels[PixelID] = 0x1A1A1A1A;
+        }
+    }
+
+
+    //Create BITMAP Struct
+    //BITMAPHEADER
+    BITMAPINFOHEADER BitmapHeader = {
+        sizeof(BITMAPINFOHEADER),                  //Bit size of sctruct
+        (LONG)GlobalState.FrameBufferS.Width,        //Width of buffer
+        (LONG)GlobalState.FrameBufferS.Height,       //Heght of buffer
+        1,
+        32,
+        BI_RGB,
+        0,0,0,0,0
+    };
+
+    BITMAPINFO BitmapInfo = {
+        BitmapHeader,
+        NULL,
+    };
+        
+        
+    //Copies BITMAP (pixels) into screen buffer
+    Assert(StretchDIBits(
+               GlobalState.DeviceContext,
+               0,
+               0,
+               GlobalState.ScreenS.srcWidth,
+               GlobalState.ScreenS.srcHeight,
+               0,
+               0,
+               GlobalState.FrameBufferS.Width,
+               GlobalState.FrameBufferS.Height,
+               GlobalState.FrameBufferS.Pixels,
+               &BitmapInfo,
+               DIB_RGB_COLORS,
+               SRCCOPY));    
 }

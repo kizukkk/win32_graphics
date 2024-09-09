@@ -14,7 +14,7 @@ LRESULT Win32WindowsCallback(HWND WindowHandler,
 //Additional functions
 void ProcessMessage(MSG Message);
 void UpdateClientRectSize();
-
+void CopiFrameBufferInContext();
 
 typedef int8_t i8;
 typedef int16_t i16;
