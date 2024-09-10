@@ -16,4 +16,6 @@ del *.pdb > NULL 2> NULL
 
 call cl.exe %CompilerFlags% %CodeDir%\%CompileFile%.cpp -Fm%CompileFile%.map /link %LinkerFlags%
 
+start %CompileFile%.exe
+
 popd
