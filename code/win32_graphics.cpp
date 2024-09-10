@@ -1,5 +1,6 @@
 #include <windows.h>
-
+#include "win32_graphics.h"
+#include <windows.h>
 #include "win32_graphics.h"
 
 //Structure of global varibles 
@@ -11,13 +12,12 @@ int WinMain(HINSTANCE hInstance,
             LPSTR     lpCmdLine,
             int       nShowCmd)
 {
+    //Init runn flag
     GlobalState.IsRunning = true;
-    
-    WNDCLASSA WindowClass = {};
 
-    //Create base window structure
-    {
-        
+    //Create base window structure    
+    WNDCLASSA WindowClass = {};
+    {        
         //Init window class structure params
         WindowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;      //Styles of application
         WindowClass.lpfnWndProc = Win32WindowsCallback;              //Application  event callback 
@@ -28,20 +28,19 @@ int WinMain(HINSTANCE hInstance,
         WindowClass.hCursor = LoadCursorA(NULL, IDC_ARROW);
         WindowClass.hbrBackground = NULL;                            //Background color (Null for custom window view)
         WindowClass.lpszMenuName = NULL;                             //Application menu names
-        WindowClass.lpszClassName = "My First Windows Application";  //Window (application) title
+        WindowClass.lpszClassName = "My Application";  //Window (application) title
 
         //Catch window class create faile
         if (!RegisterClassA(&WindowClass))
         {
             InvalidCodePath;
         }
+    }    
     
-    }
     //End
 
     //Init window of application
     {
-    
         GlobalState.WindowHandler = CreateWindowExA(
             0,                                              //dwExStyle - additional application style
             WindowClass.lpszClassName,                      //lpClassName - application Class Name
@@ -64,21 +63,46 @@ int WinMain(HINSTANCE hInstance,
         }
 
         //Get DeviceContext (area of screen on window)
-        GlobalState.DeviceContext = GetDC(GlobalState.WindowHandler);
-        
+        GlobalState.DeviceContext = GetDC(GlobalState.WindowHandler);   
     }
     //End
 
     //Dedicate FrameBuffer size
     {
-        //Calc memory size for FrameBuffer
         UpdateClientRectSize();
+        
+        //Calc memory size for FrameBuffer
         GlobalState.FrameBufferS.Width = GlobalState.ScreenS.srcWidth;
         GlobalState.FrameBufferS.Height = GlobalState.ScreenS.srcHeight;
         GlobalState.FrameBufferS.Pixels = (u32*) malloc(sizeof(u32)
-                                                                   * GlobalState.FrameBufferS.Width
-                                                                   * GlobalState.FrameBufferS.Height);
+                                                        * GlobalState.FrameBufferS.Width
+                                                        * GlobalState.FrameBufferS.Height);
+
+        //Iterate FrameBuffer and set pixels color
+        //Create UA flag <:
+        for (u32 Y = 0; Y < GlobalState.FrameBufferS.Height; ++Y)
+        {
+            for(u32 X = 0; X < GlobalState.FrameBufferS.Width; ++X)
+            {
+                //Calc row shift like 2D matrix
+                u32 PixelID = GlobalState.FrameBufferS.Width * Y + X;
+                if (Y > GlobalState.FrameBufferS.Height / 2)
+                {
+                    GlobalState.FrameBufferS.Pixels[PixelID] = 0xFF005BBB;
+                }
+                else
+                {
+                    GlobalState.FrameBufferS.Pixels[PixelID] = 0xFFFFD500;
+                }
+                
+            }
+        }
+
+        //First init
+        PastFrameBuffer();
+
     }
+    //End
  
     //Main loop
     while(GlobalState.IsRunning)
@@ -87,10 +111,11 @@ int WinMain(HINSTANCE hInstance,
 
         ProcessMessage(Message);
 
-        //CopiFrameBufferInContext();
+        PastFrameBuffer();
        
-    }    
-
+    }
+    //End
+    
     return 1;
 }
 
@@ -115,7 +140,7 @@ LRESULT Win32WindowsCallback(HWND WindowHandler,
 
         case WM_SIZING:
         {
-            CopiFrameBufferInContext();
+            PastFrameBuffer();
         } break;
         
         //Handle window destroy and close event
@@ -172,22 +197,8 @@ void UpdateClientRectSize()
 }
 
 
-void CopiFrameBufferInContext()
+void PastFrameBuffer()
 {
-    UpdateClientRectSize();        
-
-    //Iterate FrameBuffer and set pixels color
-    for (u32 Y = 0; Y < GlobalState.FrameBufferS.Height; ++Y)
-    {
-        for(u32 X = 0; X < GlobalState.FrameBufferS.Width; ++X)
-        {
-            //Calc shift like 2D matrix
-            u32 PixelID = GlobalState.FrameBufferS.Width * Y + X;
-            GlobalState.FrameBufferS.Pixels[PixelID] = 0x1A1A1A1A;
-        }
-    }
-
-
     //Create BITMAP Struct
     //BITMAPHEADER
     BITMAPINFOHEADER BitmapHeader = {
